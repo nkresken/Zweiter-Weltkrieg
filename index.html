@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Der Zweite Weltkrieg – Zeitstrahl und Vergleich</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2326; --slate:#2F3A40; --paper:#FFFFFF; --mist:#EEF1F2; --line:#C5CCD0;
+    --red:#A3231B; --green:#2E7D4F; --wrong:#C62828; --sand:#FFF6D6; --sandline:#E6CF7A; --muted:#6B7378;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"Source Sans 3",Calibri,Arial,sans-serif;}
+  body{min-height:100vh;touch-action:manipulation}
+  header{background:var(--slate);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  header h1{font-family:"Source Serif 4",Cambria,serif;font-size:26px;margin:0;font-weight:700}
+  .save{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .save input{font:16px "Source Sans 3",sans-serif;padding:8px 10px;border-radius:8px;border:none;width:170px}
+  .save button{font:700 15px "Source Sans 3",sans-serif;padding:9px 14px;border-radius:8px;border:none;background:#FFF6D6;color:var(--slate);cursor:pointer}
+  #saveMsg{font-size:14px;color:#FFF6D6;min-width:10px}
+  nav{display:flex;gap:8px;margin-left:auto}
+  nav button{font:600 16px "Source Sans 3",sans-serif;padding:9px 16px;border-radius:8px;border:2px solid #fff;background:transparent;color:#fff;cursor:pointer}
+  nav button.active{background:#fff;color:var(--slate)}
+  main{padding:18px 28px 28px;max-width:1500px;margin:0 auto}
+  .task{display:flex;align-items:flex-start;gap:14px;background:var(--mist);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+  .task .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;display:grid;place-items:center}
+  .task p{margin:3px 0;font-size:18px}
+  .bar{display:flex;align-items:center;gap:12px;margin:8px 0 12px;flex-wrap:wrap}
+  .score{font-size:18px;font-weight:700;color:var(--slate)}
+  .bar button{font:600 15px "Source Sans 3",sans-serif;padding:8px 14px;border-radius:8px;border:1.5px solid var(--slate);background:#fff;color:var(--slate);cursor:pointer}
+  .bar button.teacher{border-color:var(--muted);color:var(--muted);margin-left:auto}
+  .hidden{display:none!important}
+
+  /* Zeitstrahl */
+  .row{position:relative;margin:10px 0 26px}
+  .row .axis{position:absolute;left:0;right:0;top:52px;height:4px;background:var(--slate);border-radius:2px}
+  .row .axis::after{content:"";position:absolute;right:-4px;top:-7px;border-left:14px solid var(--slate);border-top:9px solid transparent;border-bottom:9px solid transparent}
+  .slots{position:relative;display:grid;gap:6px}
+  .slot{position:relative;display:flex;flex-direction:column;align-items:center}
+  .slot .year{height:22px;font-family:"Source Serif 4",serif;font-weight:700;color:var(--red);font-size:17px}
+  .slot .dot{width:16px;height:16px;border-radius:50%;background:var(--red);margin:6px 0 10px;border:3px solid #fff;box-shadow:0 0 0 2px var(--red);position:relative;z-index:1}
+  .slot .date{font-weight:700;font-size:15px;color:var(--slate);margin-bottom:6px;text-align:center}
+  #timeline .card{font-size:13.5px;padding:12px 6px 20px}
+  .slot .date{font-size:14px}
+  .drop{width:100%;min-height:110px;border:2px dashed var(--line);border-radius:10px;display:flex;align-items:stretch;justify-content:center;padding:4px;background:#fafbfb;transition:background .15s}
+  .drop.over{background:var(--sand);border-color:var(--sandline)}
+
+  .card{position:relative;background:#fff;border:3px solid var(--slate);border-radius:10px;padding:12px 10px 10px;font-size:15px;line-height:1.25;cursor:grab;user-select:none;-webkit-user-select:none;width:100%;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+  .card::before{content:"";position:absolute;top:-17px;left:50%;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:inherit;border:3px solid var(--slate)}
+  .card::after{content:"";position:absolute;top:-3px;left:50%;width:16px;height:6px;margin-left:-8px;background:inherit}
+  .card.ok{border-color:var(--green)} .card.ok::before{border-color:var(--green)}
+  .card.bad{border-color:var(--wrong)} .card.bad::before{border-color:var(--wrong)}
+  .card.dragging{position:fixed;z-index:1000;cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.25);pointer-events:none}
+  .card .star{position:absolute;right:4px;bottom:2px;font-size:20px;color:var(--line);display:none;cursor:pointer}
+  .card.ok .star{display:block}
+  .card.turn{background:var(--sand)} .card.turn .star{color:var(--red)}
+
+  .pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px 12px;padding:18px 12px 12px;border-radius:12px;background:var(--mist);min-height:110px}
+  .pool .card{width:auto}
+  .poolhead{font-weight:700;color:var(--slate);margin:4px 0 6px;font-size:17px}
+
+  .turnpanel{margin-top:18px;border-radius:12px;border:2px solid var(--sandline);background:var(--sand);padding:14px 18px}
+  .turnpanel h2,.round2 h2{font-family:"Source Serif 4",serif;margin:0 0 6px;font-size:21px;color:var(--slate)}
+  textarea{width:100%;min-height:90px;font:16px "Source Sans 3",sans-serif;padding:10px;border-radius:8px;border:1.5px solid var(--line);resize:vertical}
+  .note{font-size:13px;color:var(--muted);margin-top:4px}
+
+  /* Runde 2 */
+  .grid2{display:grid;grid-template-columns:190px 1fr 1fr;gap:10px;align-items:stretch}
+  .grid2 .h{background:var(--slate);color:#fff;font-weight:700;padding:10px 12px;border-radius:8px;font-size:17px}
+  .grid2 .cat{background:var(--mist);font-weight:700;color:var(--slate);padding:12px;border-radius:8px;display:flex;align-items:center;font-size:16px}
+  .grid2 .drop{min-height:110px;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px 8px;padding:16px 8px 8px;align-content:start}
+  .grid2 .card{font-size:14px}
+  .fazit{margin-top:18px;background:var(--mist);border-radius:12px;padding:14px 18px}
+  .done{color:var(--green);font-weight:700}
+
+  .dragmode .card{touch-action:none}
+  .card.sel{outline:4px solid #E6A700;outline-offset:2px}
+  body.placing .drop{background:#FFF9E6;border-color:#E6CF7A}
+  .hint{font-size:15px;color:var(--muted);margin:0}
+  @media (max-width:760px){
+    header{padding:10px 14px;gap:10px}
+    header h1{font-size:20px;width:100%}
+    .save input{width:130px}
+    .save button,nav button{font-size:14px;padding:7px 10px}
+    nav{margin-left:0;width:100%}
+    nav button{flex:1}
+    main{padding:12px 12px 230px}
+    .task p{font-size:15px}
+    .row .axis,.slot .dot{display:none}
+    .row{margin:0}
+    .slots{display:block!important}
+    .slot{display:grid;grid-template-columns:86px 1fr;align-items:center;gap:8px;margin-bottom:8px}
+    .slot .year{grid-column:1/3;height:auto;margin-top:6px;border-bottom:2px solid var(--red)}
+    .slot .year:empty{display:none}
+    .slot .date{margin:0;text-align:left;font-size:14px}
+    .drop{min-height:62px}
+    #timeline .card{font-size:14px;padding:12px 8px 18px}
+    .pool{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;overflow-x:auto;gap:12px;padding:20px 12px 12px;min-height:0;max-height:210px;border-radius:14px 14px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.15)}
+    .pool .card{flex:0 0 190px;font-size:14px}
+    .pool:empty{display:none}
+    .poolhead{display:none}
+    .grid2{grid-template-columns:1fr!important}
+    .grid2 > div:first-child,.grid2 .h{display:none}
+    .grid2 .cat{margin-top:8px}
+    .grid2 .drop{min-height:62px;grid-template-columns:1fr;position:relative;padding-top:38px}
+    .grid2 .drop::before{content:attr(data-label);position:absolute;top:4px;left:10px;font-weight:700;font-size:13px;color:var(--slate)}
+    .round-hidden-mobile{display:none}
+  }
+  @media (max-width:900px){ .grid2{grid-template-columns:110px 1fr 1fr} .card{font-size:13px} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Der Zweite Weltkrieg</h1>
+  <div class="save">
+    <input id="name" placeholder="Ihr Name" aria-label="Name">
+    <button id="saveBtn">Ergebnis speichern</button>
+    <button id="copyBtn">Ergebnis kopieren</button>
+    <span id="saveMsg"></span>
+  </div>
+  <nav>
+    <button id="tab1" class="active">Runde 1 · Zeitstrahl</button>
+    <button id="tab2">Runde 2 · Westen und Osten</button>
+  </nav>
+</header>
+
+<main>
+<section id="round1">
+  <div class="task"><div class="num">1</div><div>
+    <p><b>Ziehen Sie jede Ereigniskarte an die richtige Stelle des Zeitstrahls.</b></p>
+    <p>Grüner Rahmen = richtig, roter Rahmen = falsch. Falsche Karten können Sie erneut verschieben.</p>
+    <p class="hint">Am Handy: Karte antippen, dann das passende Feld antippen.</p>
+  </div></div>
+  <div class="bar">
+    <span class="score" id="score1"></span>
+    <button id="shuffle1">Neu mischen</button>
+    <button id="solve1" class="teacher">Lösung zeigen (Lehrkraft)</button>
+  </div>
+  <div id="timeline"></div>
+  <div class="poolhead">Ereigniskarten</div>
+  <div class="pool" id="pool1"></div>
+
+  <div class="turnpanel">
+    <h2>Wendepunkte</h2>
+    <p style="margin:0 0 8px;font-size:17px"><b>Benennen</b> Sie drei bedeutsame Wendepunkte des Krieges und <b>begründen</b> Sie Ihre Wahl. Tippen Sie dazu auf den Stern ★ einer richtig platzierten Karte.</p>
+    <p id="turnlist" style="margin:0 0 8px;font-weight:600;color:var(--red)">Noch keine Wendepunkte markiert.</p>
+    <textarea id="turnText" placeholder="Begründung: Ich halte … für einen Wendepunkt, weil …"></textarea>
+    <div class="note">Sichern Sie Ihr Ergebnis oben mit „Ergebnis speichern“ oder „Ergebnis kopieren“.</div>
+  </div>
+</section>
+
+<section id="round2" class="hidden round2">
+  <div class="task"><div class="num">2</div><div>
+    <p><b>Ordnen Sie die Aussagekarten der richtigen Kategorie und dem richtigen Kriegsschauplatz zu.</b></p>
+    <p>Grundlage: Ihr Darstellungstext (Horizonte S. 310–313). In manche Felder gehören zwei Karten. Grüner Rahmen = richtig, roter Rahmen = falsch.</p>
+    <p class="hint">Am Handy: Karte antippen, dann das passende Feld antippen.</p>
+  </div></div>
+  <div class="bar">
+    <span class="score" id="score2"></span>
+    <button id="shuffle2">Neu mischen</button>
+    <button id="solve2" class="teacher">Lösung zeigen (Lehrkraft)</button>
+  </div>
+  <div class="grid2" id="grid2"></div>
+  <div class="poolhead" style="margin-top:14px">Aussagekarten</div>
+  <div class="pool" id="pool2"></div>
+  <div class="fazit">
+    <h2>Fazit</h2>
+    <p style="margin:0 0 8px;font-size:17px">Ein Krieg – zwei Kriege? Formulieren Sie in einem Satz, worin sich der Krieg im Osten grundlegend vom Krieg im Westen unterschied.</p>
+    <textarea id="fazitText" placeholder="Der Krieg im Osten unterschied sich vom Krieg im Westen vor allem dadurch, dass …"></textarea>
+    <div class="note">Sichern Sie Ihr Ergebnis oben mit „Ergebnis speichern“ oder „Ergebnis kopieren“.</div>
+  </div>
+</section>
+</main>
+
+<script>
+// ---------- Daten ----------
+// Runde 1: Auswahl aus AB 8 „Verlauf wichtiger politischer und militärischer Ereignisse 1939–1945“
+const EVENTS = [
+  {id:"e1",  year:"1939", date:"23.08.1939", text:"Nichtangriffspakt Deutschland – UdSSR (Hitler-Stalin-Pakt)"},
+  {id:"e2",  year:"",     date:"01.09.1939", text:"Überfall auf Polen"},
+  {id:"e3",  year:"",     date:"03.09.1939", text:"Frankreich und Großbritannien erklären dem Deutschen Reich den Krieg"},
+  {id:"e18", year:"1940", date:"09.04.1940", text:"Überfall auf Dänemark und Norwegen: beide Länder werden besetzt"},
+  {id:"e4",  year:"",     date:"10.05.1940", text:"Westfeldzug: Luxemburg, Belgien und die Niederlande werden besetzt"},
+  {id:"e5",  year:"",     date:"22.06.1940", text:"Waffenstillstand von Compiègne: Frankreich ist besiegt"},
+  {id:"e6",  year:"",     date:"ab Aug. 1940", text:"Luftangriffe auf England: Luftwaffe kann die Royal Air Force nicht besiegen"},
+  {id:"e7",  year:"1941", date:"22.06.1941", text:"Überfall auf die Sowjetunion („Unternehmen Barbarossa“)"},
+  {id:"e8",  year:"",     date:"Spätherbst 1941", text:"Vormarsch im Osten endet kurz vor Moskau"},
+  {id:"e19", year:"",     date:"07.12.1941", text:"Japan greift Pearl Harbor an: Die USA erklären Japan den Krieg und treten in den Krieg ein"},
+  {id:"e9",  year:"",     date:"11.12.1941", text:"Kriegserklärung des Deutschen Reichs und Italiens an die USA"},
+  {id:"e22", year:"1942", date:"ab 1942", text:"Verstärkte Luftangriffe auf Deutschland: Die Zivilbevölkerung wird mit dem Krieg konfrontiert"},
+  {id:"e17", year:"",     date:"Nov. 1942", text:"Großoffensive der Roten Armee, 6. Armee bei Stalingrad eingekesselt"},
+  {id:"e10", year:"1943", date:"31.01.1943", text:"Kapitulation der 6. Armee in Stalingrad"},
+  {id:"e11", year:"",     date:"18.02.1943", text:"Goebbels ruft den „totalen Krieg“ aus"},
+  {id:"e12", year:"",     date:"Mai 1943", text:"Afrikakorps von den Alliierten besiegt"},
+  {id:"e13", year:"1944", date:"06.06.1944", text:"„D-Day“: Landung der Alliierten in der Normandie"},
+  {id:"e14", year:"",     date:"Sommer 1944", text:"Großoffensive der Sowjetunion gegen die Wehrmacht"},
+  {id:"e20", year:"1945", date:"30.04.1945", text:"Selbstmord Hitlers in Berlin"},
+  {id:"e15", year:"",     date:"07./09.05.1945", text:"Bedingungslose Kapitulation der Wehrmacht in Reims und Berlin"},
+  {id:"e21", year:"",     date:"06./09.08.1945", text:"Abwurf der Atombomben auf Hiroshima und Nagasaki durch die USA"},
+  {id:"e16", year:"",     date:"02.09.1945", text:"Kapitulation Japans: Ende des Krieges im Pazifik"}
+];
+const ROWS = [[0,1,2,3,4,5,6,7,8,9,10],[11,12,13,14,15,16,17,18,19,20,21]];
+
+// Runde 2: Inhalte nach Horizonte S. 310–313
+const CATS = ["Charakter des Krieges","Ziele","Rolle der Ideologie","Kriegsführung","Verlauf","Umgang mit der Bevölkerung","Todesopfer"];
+const STATEMENTS = [
+  {id:"c1", cell:"0-W", text:"Eroberungs- und Besatzungskrieg"},
+  {id:"c2", cell:"0-O", text:"Rassen- und Vernichtungskrieg"},
+  {id:"z1", cell:"1-W", text:"Sieg über Frankreich, Großbritannien zum Einlenken zwingen, Ressourcen und Staatskassen plündern"},
+  {id:"z2", cell:"1-O", text:"„Lebensraum im Osten“ erobern, Armee „aus dem Lande selbst“ versorgen"},
+  {id:"i1", cell:"2-W", text:"Kein ideologischer Vernichtungskampf gegen die Bevölkerung"},
+  {id:"i2", cell:"2-O", text:"Kampf gegen den „jüdischen Bolschewismus“: die „jüdisch-bolschewistische Intelligenz“ soll ausgelöscht werden"},
+  {id:"k1", cell:"3-W", text:"Schnelle Feldzüge, Waffenstillstand mit dem besiegten Gegner"},
+  {id:"k2", cell:"3-O", text:"Kriegsverbrechen sind von Beginn an ausdrücklich zugelassen"},
+  {id:"v1", cell:"4-W", text:"1939/40: „Sitzkrieg“, dann Besetzung von Dänemark, Norwegen und Benelux, Sieg über Frankreich"},
+  {id:"v2", cell:"4-W", text:"1944: Landung der Alliierten in der Normandie"},
+  {id:"v3", cell:"4-O", text:"1939: Polen erobert und aufgeteilt; 22.6.1941: Überfall auf die Sowjetunion"},
+  {id:"v4", cell:"4-O", text:"1943: Niederlage in Stalingrad; 1944: Großoffensive der Roten Armee"},
+  {id:"u1", cell:"5-W", text:"Besatzung anfangs teils zurückhaltend, später Zwangsarbeit, Repression und Deportation der Juden"},
+  {id:"u2", cell:"5-O", text:"Pogrome und Massenerschießungen durch Einsatzgruppen: Juden, Sinti und Roma, Kommissare, Partisanen"},
+  {id:"t1", cell:"6-W", text:"Zehntausende Tote durch Luftangriffe, Hunger und Erschießungen"},
+  {id:"t2", cell:"6-O", text:"Millionen Hungertote, Massenerschießungen (Babi Jar); Sowjetunion insgesamt 20 bis 27 Mio. Tote"}
+];
+
+// ---------- Ziehen (Maus/Stift) und Antippen (Handy) ----------
+const COARSE = window.matchMedia("(pointer: coarse)").matches;
+if(!COARSE) document.body.classList.add("dragmode");
+let drag=null, pending=null, selected=null;
+function select(card){
+  if(selected) selected.classList.remove("sel");
+  selected = (selected===card) ? null : card;
+  if(selected) selected.classList.add("sel");
+  document.body.classList.toggle("placing", !!selected);
+}
+function makeDraggable(card, onDrop){
+  card._onDrop=onDrop;
+  card.addEventListener("click", e=>{
+    if(e.target.classList.contains("star")) return;
+    if(card._dragged){ card._dragged=false; return; }
+    if(card.dataset.locked==="1") return;
+    select(card);
+  });
+  if(COARSE) return;
+  card.addEventListener("pointerdown", e=>{
+    if(e.target.classList.contains("star")) return;
+    if(card.dataset.locked==="1") return;
+    pending={card,onDrop,x:e.clientX,y:e.clientY};
+  });
+}
+function startDrag(e){
+  const {card,onDrop}=pending; pending=null;
+  const r=card.getBoundingClientRect();
+  drag={card,onDrop,dx:e.clientX-r.left,dy:e.clientY-r.top};
+  card.style.width=r.width+"px"; card.classList.add("dragging"); document.body.appendChild(card);
+}
+function move(e){
+  if(pending && Math.hypot(e.clientX-pending.x,e.clientY-pending.y)>8) startDrag(e);
+  if(!drag) return;
+  drag.card.style.left=(e.clientX-drag.dx)+"px"; drag.card.style.top=(e.clientY-drag.dy)+"px";
+  document.querySelectorAll(".drop.over").forEach(d=>d.classList.remove("over"));
+  const t=target(e); if(t && t.classList.contains("drop")) t.classList.add("over");
+}
+function target(e){
+  const els=document.elementsFromPoint(e.clientX,e.clientY);
+  return els.find(el=>el.classList && (el.classList.contains("drop")||el.classList.contains("pool")));
+}
+window.addEventListener("pointermove", move);
+window.addEventListener("pointerup", e=>{
+  pending=null;
+  if(!drag) return;
+  const d=drag; drag=null; d.card._dragged=true; setTimeout(()=>{d.card._dragged=false;},0);
+  document.querySelectorAll(".drop.over").forEach(x=>x.classList.remove("over"));
+  const t=target(e);
+  d.card.classList.remove("dragging"); d.card.style.left=d.card.style.top=""; d.card.style.width="";
+  if(selected===d.card) select(d.card);
+  d.onDrop(d.card, t);
+});
+// Antippen eines Ziels legt die ausgewählte Karte ab
+document.addEventListener("click", e=>{
+  if(!selected) return;
+  if(e.target.closest(".card")) return;
+  const t=e.target.closest(".drop, .pool");
+  if(!t) return;
+  const c=selected; select(c); c._onDrop(c, t);
+});
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+// ---------- Runde 1 ----------
+const timeline=document.getElementById("timeline"), pool1=document.getElementById("pool1");
+function buildTimeline(){
+  timeline.innerHTML="";
+  ROWS.forEach(row=>{
+    const r=document.createElement("div"); r.className="row";
+    r.innerHTML='<div class="axis"></div>';
+    const s=document.createElement("div"); s.className="slots";
+    s.style.gridTemplateColumns=`repeat(${row.length},1fr)`;
+    row.forEach(i=>{
+      const ev=EVENTS[i];
+      const slot=document.createElement("div"); slot.className="slot";
+      slot.innerHTML=`<div class="year">${ev.year}</div><div class="dot"></div><div class="date">${ev.date}</div>`;
+      const drop=document.createElement("div"); drop.className="drop"; drop.dataset.answer=ev.id;
+      slot.appendChild(drop); s.appendChild(slot);
+    });
+    r.appendChild(s); timeline.appendChild(r);
+  });
+}
+function card1(ev){
+  const c=document.createElement("div"); c.className="card"; c.dataset.id=ev.id;
+  c.innerHTML=`${ev.text}<span class="star" title="Als Wendepunkt markieren">★</span>`;
+  c.querySelector(".star").addEventListener("click",()=>{ c.classList.toggle("turn"); updateTurns(); });
+  makeDraggable(c, drop1); return c;
+}
+function drop1(card, t, home){
+  if(t && t.classList.contains("drop")){
+    const prev=t.querySelector(".card");
+    if(prev && prev!==card){ prev.classList.remove("ok","bad","turn"); pool1.appendChild(prev); }
+    t.appendChild(card);
+    const ok=t.dataset.answer===card.dataset.id;
+    card.classList.toggle("ok",ok); card.classList.toggle("bad",!ok);
+    if(ok) card.dataset.locked="1";
+  } else { card.classList.remove("ok","bad","turn"); pool1.appendChild(card); }
+  score1(); updateTurns();
+}
+function score1(){
+  const n=document.querySelectorAll("#timeline .card.ok").length;
+  document.getElementById("score1").innerHTML = n===EVENTS.length ? `<span class="done">Alle ${EVENTS.length} Karten richtig – weiter mit den Wendepunkten!</span>` : `${n} von ${EVENTS.length} richtig`;
+}
+function updateTurns(){
+  const t=[...document.querySelectorAll("#timeline .card.turn")].map(c=>EVENTS.find(e=>e.id===c.dataset.id));
+  document.getElementById("turnlist").textContent = t.length ? "Markiert: "+t.map(e=>e.date+" – "+e.text).join(" · ") : "Noch keine Wendepunkte markiert.";
+}
+function start1(){ buildTimeline(); pool1.innerHTML=""; shuffle([...EVENTS]).forEach(ev=>pool1.appendChild(card1(ev))); score1(); updateTurns(); }
+document.getElementById("shuffle1").onclick=start1;
+document.getElementById("solve1").onclick=()=>{
+  document.querySelectorAll("#timeline .drop").forEach(d=>{
+    const c=document.querySelector(`.card[data-id="${d.dataset.answer}"]`);
+    const prev=d.querySelector(".card"); if(prev && prev!==c) pool1.appendChild(prev);
+    d.appendChild(c); c.classList.remove("bad"); c.classList.add("ok"); c.dataset.locked="1";
+  }); score1();
+};
+
+// ---------- Runde 2 ----------
+const grid2=document.getElementById("grid2"), pool2=document.getElementById("pool2");
+function buildGrid(){
+  grid2.innerHTML='<div></div><div class="h">Krieg im Westen</div><div class="h">Krieg im Osten</div>';
+  CATS.forEach((c,i)=>{
+    grid2.insertAdjacentHTML("beforeend",`<div class="cat">${c}</div>`);
+    ["W","O"].forEach(s=>{ const d=document.createElement("div"); d.className="drop"; d.dataset.answer=i+"-"+s; d.dataset.label=(s==="W"?"Krieg im Westen":"Krieg im Osten"); grid2.appendChild(d); });
+  });
+}
+function card2(st){
+  const c=document.createElement("div"); c.className="card"; c.dataset.cell=st.cell; c.textContent=st.text;
+  makeDraggable(c, drop2); return c;
+}
+function drop2(card, t){
+  if(t && t.classList.contains("drop") && t.closest("#grid2")){
+    t.appendChild(card);
+    const ok=t.dataset.answer===card.dataset.cell;
+    card.classList.toggle("ok",ok); card.classList.toggle("bad",!ok);
+    if(ok) card.dataset.locked="1";
+  } else { card.classList.remove("ok","bad"); pool2.appendChild(card); }
+  score2();
+}
+function score2(){
+  const n=document.querySelectorAll("#grid2 .card.ok").length;
+  document.getElementById("score2").innerHTML = n===STATEMENTS.length ? `<span class="done">Alle ${STATEMENTS.length} Karten richtig – weiter mit dem Fazit!</span>` : `${n} von ${STATEMENTS.length} richtig`;
+}
+function start2(){ buildGrid(); pool2.innerHTML=""; shuffle([...STATEMENTS]).forEach(s=>pool2.appendChild(card2(s))); score2(); }
+document.getElementById("shuffle2").onclick=start2;
+document.getElementById("solve2").onclick=()=>{
+  document.querySelectorAll("#round2 .card").forEach(c=>{
+    const d=document.querySelector(`#grid2 .drop[data-answer="${c.dataset.cell}"]`);
+    d.appendChild(c); c.classList.remove("bad"); c.classList.add("ok"); c.dataset.locked="1";
+  }); score2();
+};
+
+// ---------- Ergebnis sichern ----------
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function collect(){
+  const r1=EVENTS.map(ev=>{
+    const d=document.querySelector(`#timeline .drop[data-answer="${ev.id}"]`);
+    const c=d&&d.querySelector(".card");
+    const placed=c?EVENTS.find(e=>e.id===c.dataset.id):null;
+    return {date:ev.date, placed:placed?placed.text:"", status:!c?"leer":(c.classList.contains("ok")?"richtig":"falsch"), turn:!!(c&&c.classList.contains("turn"))};
+  });
+  const r2=[];
+  CATS.forEach((cat,i)=>["W","O"].forEach(sd=>{
+    const d=document.querySelector(`#grid2 .drop[data-answer="${i}-${sd}"]`);
+    const cs=d?[...d.querySelectorAll(".card")]:[];
+    if(!cs.length) r2.push({cat, side:sd==="W"?"Westen":"Osten", placed:"", status:"leer"});
+    cs.forEach(c=>r2.push({cat, side:sd==="W"?"Westen":"Osten", placed:c.textContent, status:c.classList.contains("ok")?"richtig":"falsch"}));
+  }));
+  return {name:document.getElementById("name").value.trim(), when:new Date().toLocaleString("de-DE"), r1, r2,
+    turn:document.getElementById("turnText").value.trim(), fazit:document.getElementById("fazitText").value.trim()};
+}
+function asText(d){
+  let t=`Der Zweite Weltkrieg – Ergebnis\nName: ${d.name||"–"}\nStand: ${d.when}\n\nRUNDE 1 – ZEITSTRAHL (${d.r1.filter(x=>x.status==="richtig").length}/${d.r1.length} richtig)\n`;
+  d.r1.forEach(x=>t+=`${x.date}: ${x.placed||"(leer)"} [${x.status}]${x.turn?" ★ Wendepunkt":""}\n`);
+  t+=`\nWendepunkte – Begründung:\n${d.turn||"(leer)"}\n\nRUNDE 2 – WESTEN UND OSTEN (${d.r2.filter(x=>x.status==="richtig").length}/${STATEMENTS.length} richtig)\n`;
+  d.r2.forEach(x=>t+=`${x.cat} – ${x.side}: ${x.placed||"(leer)"} [${x.status}]\n`);
+  t+=`\nFazit:\n${d.fazit||"(leer)"}\n`;
+  return t;
+}
+function asHtml(d){
+  const col={richtig:"#2E7D4F",falsch:"#C62828",leer:"#6B7378"};
+  const rows1=d.r1.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.placed)||"<i>leer</i>"}</td><td style="color:${col[x.status]};font-weight:700">${x.status}</td><td>${x.turn?"★":""}</td></tr>`).join("");
+  const rows2=d.r2.map(x=>`<tr><td>${esc(x.cat)}</td><td>${x.side}</td><td>${esc(x.placed)||"<i>leer</i>"}</td><td style="color:${col[x.status]};font-weight:700">${x.status}</td></tr>`).join("");
+  return `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Ergebnis Zweiter Weltkrieg${d.name?" – "+esc(d.name):""}</title>
+<style>body{font-family:Calibri,Arial,sans-serif;max-width:900px;margin:30px auto;color:#1F2326}h1,h2{font-family:Cambria,serif;color:#2F3A40}table{border-collapse:collapse;width:100%;margin-bottom:16px}td,th{border:1px solid #C5CCD0;padding:6px 8px;text-align:left;vertical-align:top}th{background:#2F3A40;color:#fff}.box{background:#EEF1F2;padding:10px 14px;border-radius:8px;white-space:pre-wrap}</style></head><body>
+<h1>Der Zweite Weltkrieg – Ergebnis</h1><p><b>Name:</b> ${esc(d.name)||"–"} · <b>Stand:</b> ${esc(d.when)}</p>
+<h2>Runde 1 – Zeitstrahl (${d.r1.filter(x=>x.status==="richtig").length}/${d.r1.length} richtig)</h2>
+<table><tr><th>Datum</th><th>Zugeordnete Karte</th><th>Bewertung</th><th>Wendepunkt</th></tr>${rows1}</table>
+<h2>Wendepunkte – Begründung</h2><div class="box">${esc(d.turn)||"<i>leer</i>"}</div>
+<h2>Runde 2 – Westen und Osten (${d.r2.filter(x=>x.status==="richtig").length}/${STATEMENTS.length} richtig)</h2>
+<table><tr><th>Kategorie</th><th>Schauplatz</th><th>Zugeordnete Aussage</th><th>Bewertung</th></tr>${rows2}</table>
+<h2>Fazit</h2><div class="box">${esc(d.fazit)||"<i>leer</i>"}</div></body></html>`;
+}
+const msg=t=>{document.getElementById("saveMsg").textContent=t;};
+let downloads=null;
+(async()=>{ try{ if(window.claude&&claude.use){ downloads=await claude.use("downloads"); } }catch(e){} })();
+function localDownload(fname, html){
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fname;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+document.getElementById("saveBtn").onclick=async()=>{
+  const d=collect();
+  const fname="Ergebnis_Zweiter_Weltkrieg"+(d.name?"_"+d.name.replace(/[^\wäöüÄÖÜß-]+/g,"_"):"")+".html";
+  if(downloads){
+    try{ await downloads.save({filename:fname, data:asHtml(d)}); msg("Gespeichert."); }
+    catch(e){ msg(e&&e.code==="declined"?"Speichern abgebrochen.":"Speichern hier nicht möglich – bitte „Ergebnis kopieren“ nutzen."); }
+  } else {
+    try{ localDownload(fname, asHtml(d)); msg("Datei wird heruntergeladen."); }
+    catch(e){ msg("Speichern nicht möglich – bitte „Ergebnis kopieren“ nutzen."); }
+  }
+};
+document.getElementById("copyBtn").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(asText(collect())); msg("Kopiert – jetzt in OneNote oder Word einfügen."); }
+  catch(e){ msg("Kopieren nicht möglich."); }
+};
+
+// ---------- Tabs ----------
+function show(n){
+  document.getElementById("round1").classList.toggle("hidden",n!==1);
+  document.getElementById("round2").classList.toggle("hidden",n!==2);
+  document.getElementById("tab1").classList.toggle("active",n===1);
+  document.getElementById("tab2").classList.toggle("active",n===2);
+}
+document.getElementById("tab1").onclick=()=>{show(1); if(location.hash) history.replaceState(null,"",location.pathname);};
+document.getElementById("tab2").onclick=()=>{show(2); location.hash="westen-osten";};
+window.addEventListener("hashchange",()=>show(location.hash==="#westen-osten"?2:1));
+
+start1(); start2(); show(location.hash==="#westen-osten"?2:1);
+</script>
+</body>
+</html>
